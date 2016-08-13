@@ -48,6 +48,8 @@ typeset -g HISTORY_SUBSTRING_SEARCH_HIGHLIGHT_NOT_FOUND='bg=red,fg=white,bold'
 typeset -g HISTORY_SUBSTRING_SEARCH_GLOBBING_FLAGS='i'
 typeset -g HISTORY_SUBSTRING_SEARCH_ENSURE_UNIQUE=''
 typeset -g HISTORY_SUBSTRING_SEARCH_FUZZY=''
+typeset -g HISTORY_SUBSTRING_SEARCH_ACTIVE=1
+typeset -g HISTORY_SUBSTRING_SEARCH_ONESHOT=
 
 #-----------------------------------------------------------------------------
 # declare internal global variables
@@ -70,6 +72,11 @@ typeset -g -A _history_substring_search_unique_filter
 #-----------------------------------------------------------------------------
 
 history-substring-search-up() {
+  if [[ -z $HISTORY_SUBSTRING_SEARCH_ACTIVE ]]; then
+    zle up-line-or-history
+    return
+  fi
+
   _history-substring-search-begin
 
   _history-substring-search-up-history ||
@@ -80,6 +87,11 @@ history-substring-search-up() {
 }
 
 history-substring-search-down() {
+  if [[ -z $HISTORY_SUBSTRING_SEARCH_ACTIVE ]]; then
+    zle down-line-or-history
+    return
+  fi
+
   _history-substring-search-begin
 
   _history-substring-search-down-history ||
@@ -89,8 +101,27 @@ history-substring-search-down() {
   _history-substring-search-end
 }
 
+history-substring-search-toggle() {
+  if [[ -n $HISTORY_SUBSTRING_SEARCH_ACTIVE ]]; then
+    HISTORY_SUBSTRING_SEARCH_ACTIVE=
+    region_highlight=()
+  else
+    HISTORY_SUBSTRING_SEARCH_ACTIVE=1
+    region_highlight=("0 $#BUFFER $HISTORY_SUBSTRING_SEARCH_HIGHLIGHT_NOT_FOUND")
+  fi
+}
+
+history-substring-search-accept-line() {
+  if [[ -n $HISTORY_SUBSTRING_SEARCH_ACTIVE && -n $HISTORY_SUBSTRING_SEARCH_ONESHOT ]]; then
+    history-substring-search-toggle
+  fi
+  zle accept-line
+}
+
 zle -N history-substring-search-up
 zle -N history-substring-search-down
+zle -N history-substring-search-toggle
+zle -N history-substring-search-accept-line
 
 #-----------------------------------------------------------------------------
 # implementation details
